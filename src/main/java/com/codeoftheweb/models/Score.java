@@ -60,19 +60,8 @@ public class Score {
     }
 
     //Setters
-    public void setScore(double score) {
-        this.score = score;
-    }
-
-    public void setFinishDate(Date finishDate) {
-        this.finishDate = finishDate;
-    }
-
     public void setPlayer(Player player) {
         this.player = player;
     }
 
-    public void setGame(Game game) {
-        this.game = game;
-    }
 }

@@ -54,14 +54,6 @@ public class Game {
         return scores;
     }
 
-    //Setters
-    public void setGamePlayers(Set<GamePlayer> gamePlayers) {
-        this.gamePlayers = gamePlayers;
-    }
-
-    public void setScores(Set<Score> scores) {
-        this.scores = scores;
-    }
 
 }
 

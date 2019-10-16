@@ -57,13 +57,6 @@ public class Ship {
         this.gamePlayer = gamePlayer;
     }
 
-    public void setShipType(String shipType) {
-        this.type = shipType;
-    }
-
-    public void setLocation(Set<String> location) {
-        this.locations = location;
-    }
 }
 
 

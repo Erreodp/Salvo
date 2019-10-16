@@ -51,20 +51,5 @@ public class Salvo {
         return salvoLocations;
     }
 
-    //Setters
-    public void setGamePlayer(GamePlayer gamePlayer) {
-        this.gamePlayer = gamePlayer;
-    }
-
-    public void setSalvoLocations(Set<String> salvoLocations) {
-        this.salvoLocations = salvoLocations;
-    }
-
-    public void setTurn(int turn) {
-        this.turn = turn;
-    }
-
-
-
 }
 

@@ -53,18 +53,9 @@ public class Player {
         return gamePlayers;
     }
 
-    public Set<Score> getScores() {
+    private Set<Score> getScores() {
 
         return scores;
-    }
-
-    //Setters
-    public void setUserName(String userName) {
-        this.userName = userName;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     //Methods for TotalScore - WIN - LOST - TIED

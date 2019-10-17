@@ -49,6 +49,10 @@ public class SalvoController {
         return dto;
     }
 
+    private boolean isGuest(Authentication auth) {
+        return auth == null || auth instanceof AnonymousAuthenticationToken;
+    }
+
     @RequestMapping("/game_view/{gamePlayerId}")
     public ResponseEntity<Map<String, Object>> findGamePlayer(Authentication auth, @PathVariable long gamePlayerId) {
 
@@ -65,9 +69,22 @@ public class SalvoController {
     public List<Map<String, Object>> getAllPlayers() {
         return playerRepository.findAll()
                 .stream()
-                .map(player -> makeLeaderBoardDTO(player))
+                .map(this::makeLeaderBoardDTO)
                 .collect(Collectors.toList());
 
+    }
+
+    private Map<String, Object> makeLeaderBoardDTO(Player player) {
+        Map<String, Object> dto = new LinkedHashMap<String, Object>();
+        Map<String, Object> score = new LinkedHashMap<String, Object>();
+        dto.put("id", player.getId());
+        dto.put("email", player.getUserName());
+        dto.put("score", score);
+        score.put("total", player.getTotalScore());
+        score.put("won", player.getWinScore());
+        score.put("lost", player.getLostScore());
+        score.put("tied", player.getTiedScore());
+        return dto;
     }
 
     @RequestMapping(path = "/players", method = RequestMethod.POST)
@@ -100,6 +117,12 @@ public class SalvoController {
         Game g = gameRepository.save(new Game(d));
         GamePlayer gp = gamePlayerRepository.save(new GamePlayer(d, player, g));
         return new ResponseEntity<>(makeMap("gpid", gp.getId()), HttpStatus.CREATED);
+    }
+
+    private Map<String, Object> makeMap(String gp, Object id) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(gp, id);
+        return map;
     }
 
     @RequestMapping(path = "/game/{gameId}/players", method = RequestMethod.POST)
@@ -195,18 +218,23 @@ public class SalvoController {
 
     }
 
-    private boolean isGuest(Authentication auth) {
-        return auth == null || auth instanceof AnonymousAuthenticationToken;
+    private Map<String, Object> makeGameViewDTO(Authentication auth, GamePlayer gp) {
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("id", gp.getGame().getId());
+        dto.put("gameState", getGameState(gp));
+        dto.put("created", gp.getGame().getCreationDate());
+        dto.put("gamePlayers", getAllGamePlayers(gp.getGame().getGamePlayers()));
+        dto.put("ships", getAllShips(gp.getShips()));
+        dto.put("salvoes", getAllSalvoes(gp.getGame().getGamePlayers()));
+        dto.put("hits", getHitsDTO(gp));
+        return dto;
     }
 
-    private GamePlayer getOpponent(GamePlayer gamePlayer) {
-        GamePlayer opponent = null;
-        for (GamePlayer gp : gamePlayer.getGame().getGamePlayers()) {
-            if (gp.getId() != gamePlayer.getId()) {
-                opponent = gp;
-            }
-        }
-        return opponent;
+    private List<Map<String, Object>> getAllGames() {
+        return gameRepository.findAll()
+                .stream()
+                .map(this::makeGameDTO)
+                .collect(Collectors.toList());
     }
 
     private Map<String, Object> makeGameDTO(Game game) {
@@ -218,6 +246,12 @@ public class SalvoController {
         return dto;
     }
 
+    private List<Map<String, Object>> getAllGamePlayers(Set<GamePlayer> gps) {
+        return gps.stream()
+                .map(this::makeGamePlayersDTO)
+                .collect(Collectors.toList());
+    }
+
     private Map<String, Object> makeGamePlayersDTO(GamePlayer gp) {
         Map<String, Object> dto = new LinkedHashMap<String, Object>();
         dto.put("id", gp.getId());
@@ -225,11 +259,24 @@ public class SalvoController {
         return dto;
     }
 
+    private List<Map<String, Object>> getAllShips(Set<Ship> ships) {
+        return ships.stream()
+                .map(this::makeShipDTO)
+                .collect(Collectors.toList());
+    }
+
     private Map<String, Object> makeShipDTO(Ship ship) {
         Map<String, Object> dto = new LinkedHashMap<String, Object>();
         dto.put("type", ship.getType());
         dto.put("locations", ship.getLocations());
         return dto;
+    }
+
+    private List<Map<String, Object>> getAllSalvoes(Set<GamePlayer> gps) {
+        return gps.stream()
+                .flatMap(gamePlayer -> getTurns(gamePlayer.getSalvoes()).stream())
+                .map(this::makeSalvoDTO)
+                .collect(Collectors.toList());
     }
 
     private Map<String, Object> makeSalvoDTO(Salvo salvo) {
@@ -240,6 +287,12 @@ public class SalvoController {
         return dto;
     }
 
+    private List<Map<String, Object>> getAllScores(Set<Score> scores) {
+        return scores.stream()
+                .map(this::makeScoreDTO)
+                .collect(Collectors.toList());
+    }
+
     private Map<String, Object> makeScoreDTO(Score score) {
         Map<String, Object> dto = new LinkedHashMap<String, Object>();
         dto.put("player", score.getPlayer().getId());
@@ -248,35 +301,14 @@ public class SalvoController {
         return dto;
     }
 
-    private Map<String, Object> makeLeaderBoardDTO(Player player) {
-        Map<String, Object> dto = new LinkedHashMap<String, Object>();
-        Map<String, Object> score = new LinkedHashMap<String, Object>();
-        dto.put("id", player.getId());
-        dto.put("email", player.getUserName());
-        dto.put("score", score);
-        score.put("total", player.getTotalScore());
-        score.put("won", player.getWinScore());
-        score.put("lost", player.getLostScore());
-        score.put("tied", player.getTiedScore());
-        return dto;
-    }
-
-    private Map<String, Object> makeMap(String gp, Object id) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(gp, id);
-        return map;
-    }
-
-    private Map<String, Object> makeGameViewDTO(Authentication auth, GamePlayer gp) {
-        Map<String, Object> dto = new LinkedHashMap<>();
-        dto.put("id", gp.getGame().getId());
-        dto.put("gameState", getGameState(gp));
-        dto.put("created", gp.getGame().getCreationDate());
-        dto.put("gamePlayers", getAllGamePlayers(gp.getGame().getGamePlayers()));
-        dto.put("ships", getAllShips(gp.getShips()));
-        dto.put("salvoes", getAllSalvoes(gp.getGame().getGamePlayers()));
-        dto.put("hits", getHitsDTO(gp));
-        return dto;
+    private GamePlayer getOpponent(GamePlayer gamePlayer) {
+        GamePlayer opponent = null;
+        for (GamePlayer gp : gamePlayer.getGame().getGamePlayers()) {
+            if (gp.getId() != gamePlayer.getId()) {
+                opponent = gp;
+            }
+        }
+        return opponent;
     }
 
     private Map<String, Object> getHitsDTO(GamePlayer gp) {
@@ -295,60 +327,10 @@ public class SalvoController {
         return dto;
     }
 
-    private Map<String, Object> getDamageDTO(int carrierHIT, int carrierDMG, int battleshipHIT, int battleshipDMG,
-                                             int submarineHIT, int submarineDMG, int destroyerHIT, int destroyerDMG,
-                                             int patrolboatHIT, int patrolboatDMG) {
-        Map<String, Object> dto = new LinkedHashMap<>();
-        dto.put("carrierHits", carrierHIT);
-        dto.put("battleshipHits", battleshipHIT);
-        dto.put("submarineHits", submarineHIT);
-        dto.put("destroyerHits", destroyerHIT);
-        dto.put("patrolboatHits", patrolboatHIT);
-        dto.put("carrier", carrierDMG);
-        dto.put("battleship", battleshipDMG);
-        dto.put("submarine", submarineDMG);
-        dto.put("destroyer", destroyerDMG);
-        dto.put("patrolboat", patrolboatDMG);
-        return dto;
-    }
-
-    private List<Map<String, Object>> getAllGames() {
-        return gameRepository.findAll()
-                             .stream()
-                             .map(game -> makeGameDTO(game))
-                             .collect(Collectors.toList());
-    }
-
-    private List<Map<String, Object>> getAllGamePlayers(Set<GamePlayer> gps) {
-        return gps.stream()
-                  .map(gamePlayer -> makeGamePlayersDTO(gamePlayer))
-                  .collect(Collectors.toList());
-    }
-
-    private List<Map<String, Object>> getAllShips(Set<Ship> ships) {
-        return ships.stream()
-                    .map(ship -> makeShipDTO(ship))
-                    .collect(Collectors.toList());
-    }
-
-    private List<Map<String, Object>> getAllSalvoes(Set<GamePlayer> gps) {
-        return gps.stream()
-                          .flatMap(gamePlayer -> getTurns(gamePlayer.getSalvoes()).stream())
-                          .map(salvo -> makeSalvoDTO(salvo))
-                          .collect(Collectors.toList());
-    }
-
-    private List<Map<String, Object>> getAllScores(Set<Score> scores) {
-        return scores.stream()
-                .map(score -> makeScoreDTO(score))
-                .collect(Collectors.toList());
-    }
-
     private List<Map<String, Object>> getAllHits(GamePlayer gp) {
         List<Map<String, Object>> hitsList = new ArrayList<>();
-
         int carrierDMG = 0, battleshipDMG = 0, submarineDMG = 0, destroyerDMG = 0, patrolboatDMG = 0;
-        List <Salvo> salvoes = getTurns(gp.getSalvoes());
+        List<Salvo> salvoes = getTurns(gp.getSalvoes());
         for (Salvo salvo : salvoes) {
             int carrierHIT = 0, battleshipHIT = 0, submarineHIT = 0, destroyerHIT = 0, patrolboatHIT = 0;
             List<String> hitLocations = new ArrayList<>();
@@ -393,7 +375,24 @@ public class SalvoController {
         return hitsList;
     }
 
-    private List<Salvo> getTurns(Set<Salvo> salvoes){
+    private Map<String, Object> getDamageDTO(int carrierHIT, int carrierDMG, int battleshipHIT, int battleshipDMG,
+                                             int submarineHIT, int submarineDMG, int destroyerHIT, int destroyerDMG,
+                                             int patrolboatHIT, int patrolboatDMG) {
+        Map<String, Object> dto = new LinkedHashMap<>();
+        dto.put("carrierHits", carrierHIT);
+        dto.put("battleshipHits", battleshipHIT);
+        dto.put("submarineHits", submarineHIT);
+        dto.put("destroyerHits", destroyerHIT);
+        dto.put("patrolboatHits", patrolboatHIT);
+        dto.put("carrier", carrierDMG);
+        dto.put("battleship", battleshipDMG);
+        dto.put("submarine", submarineDMG);
+        dto.put("destroyer", destroyerDMG);
+        dto.put("patrolboat", patrolboatDMG);
+        return dto;
+    }
+
+    private List<Salvo> getTurns(Set<Salvo> salvoes) {
         return salvoes.stream()
                 .sorted(Comparator.comparing(Salvo::getTurn))
                 .collect(Collectors.toList());

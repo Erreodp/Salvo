@@ -40,7 +40,7 @@ public class SalvoApplication {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
     }
 
-
+    /*
     @Bean
     public CommandLineRunner initData(PlayerRepository playerRepository, GameRepository gameRepository,
                                       GamePlayerRepository gamePlayerRepository, ShipRepository shipRepository,
@@ -148,15 +148,14 @@ public class SalvoApplication {
             scoreRepository.saveAll(Arrays.asList(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8));
 
         };
-    }
+    }*/
 }
-
 
 @Configuration
 class WebSecurityConfiguration extends GlobalAuthenticationConfigurerAdapter {
 
     @Autowired
-    PlayerRepository playerRepository;
+    private PlayerRepository playerRepository;
 
     @Override
     public void init(AuthenticationManagerBuilder auth)

@@ -91,11 +91,11 @@ public class SalvoController {
     public ResponseEntity<Object> register(@RequestParam String email, @RequestParam String password) {
 
         if (email.isEmpty() || password.isEmpty()) {
-            return new ResponseEntity<>("Missing data", HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(makeMap("error","Missing data"), HttpStatus.FORBIDDEN);
         }
 
         if (playerRepository.findByUserName(email) != null) {
-            return new ResponseEntity<>("Name already in use", HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(makeMap("error","Name already in use"), HttpStatus.FORBIDDEN);
         }
 
         playerRepository.save(new Player(email, passwordEncoder.encode(password)));
@@ -214,10 +214,11 @@ public class SalvoController {
         }
 
         salvoRepository.save(new Salvo(salvoes.size() + 1, gp, salvo.getSalvoLocations()));
-        return new ResponseEntity<>(makeMap("OK", "Salvoes save"), HttpStatus.CREATED);
+        return new ResponseEntity<>(makeMap("OK", "SALVOES FIRED"), HttpStatus.CREATED);
 
     }
 
+    //Method for the Game View//
     private Map<String, Object> makeGameViewDTO(Authentication auth, GamePlayer gp) {
         Map<String, Object> dto = new LinkedHashMap<>();
         dto.put("id", gp.getGame().getId());
@@ -230,6 +231,7 @@ public class SalvoController {
         return dto;
     }
 
+    //Method for the Game where I call the ID - DATE - GAME PLAYERS and SCORES for each specific game//
     private List<Map<String, Object>> getAllGames() {
         return gameRepository.findAll()
                 .stream()
@@ -246,6 +248,7 @@ public class SalvoController {
         return dto;
     }
 
+    //Method for the GAME PLAYERS where I call the ID and the PLAYER of that GP//
     private List<Map<String, Object>> getAllGamePlayers(Set<GamePlayer> gps) {
         return gps.stream()
                 .map(this::makeGamePlayersDTO)
@@ -259,6 +262,7 @@ public class SalvoController {
         return dto;
     }
 
+    //Method fot the SHIPS where I call the TYPE and LOCATIONS of the ships placed by the player//
     private List<Map<String, Object>> getAllShips(Set<Ship> ships) {
         return ships.stream()
                 .map(this::makeShipDTO)
@@ -272,6 +276,7 @@ public class SalvoController {
         return dto;
     }
 
+    //Method for the SALVOES where I call the TURN - PLAYER and LOCATIONS for each set of salvoes//
     private List<Map<String, Object>> getAllSalvoes(Set<GamePlayer> gps) {
         return gps.stream()
                 .flatMap(gamePlayer -> getTurns(gamePlayer.getSalvoes()).stream())
@@ -287,6 +292,7 @@ public class SalvoController {
         return dto;
     }
 
+    //Method for the SCORES where I call the PLAYER - SCORE and FINISH DATE of that game//
     private List<Map<String, Object>> getAllScores(Set<Score> scores) {
         return scores.stream()
                 .map(this::makeScoreDTO)
@@ -301,6 +307,7 @@ public class SalvoController {
         return dto;
     }
 
+    //Method to define the OPPONENT of the game//
     private GamePlayer getOpponent(GamePlayer gamePlayer) {
         GamePlayer opponent = null;
         for (GamePlayer gp : gamePlayer.getGame().getGamePlayers()) {
@@ -311,6 +318,7 @@ public class SalvoController {
         return opponent;
     }
 
+    //Method to call the list of HITS for each player in the game//
     private Map<String, Object> getHitsDTO(GamePlayer gp) {
         Map<String, Object> dto = new LinkedHashMap<>();
 
@@ -375,6 +383,7 @@ public class SalvoController {
         return hitsList;
     }
 
+    //Method for listing the damage of each ship in the turn and total//
     private Map<String, Object> getDamageDTO(int carrierHIT, int carrierDMG, int battleshipHIT, int battleshipDMG,
                                              int submarineHIT, int submarineDMG, int destroyerHIT, int destroyerDMG,
                                              int patrolboatHIT, int patrolboatDMG) {
@@ -392,12 +401,14 @@ public class SalvoController {
         return dto;
     }
 
+    //Method for putting the TURNS in order//
     private List<Salvo> getTurns(Set<Salvo> salvoes) {
         return salvoes.stream()
                 .sorted(Comparator.comparing(Salvo::getTurn))
                 .collect(Collectors.toList());
     }
 
+    //Method for the GAME STATE where I declare several instances of the game through various conditions//
     private String getGameState(GamePlayer gp) {
 
         String placeShips = "PLACESHIPS";
@@ -457,6 +468,7 @@ public class SalvoController {
         return wait;
     }
 
+    //Method for listing the number of sunken ships//
     private int getSunks(GamePlayer gp) {
         GamePlayer opp = getOpponent(gp);
         List<String> ships = new ArrayList<>();

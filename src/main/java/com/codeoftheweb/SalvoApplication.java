@@ -148,7 +148,7 @@ public class SalvoApplication {
             scoreRepository.saveAll(Arrays.asList(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8));
 
         };
-    }*/
+    } */
 }
 
 @Configuration
